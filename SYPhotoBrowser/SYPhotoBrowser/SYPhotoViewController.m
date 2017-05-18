@@ -238,7 +238,26 @@
 
 - (void)downloadImageFromURL:(NSURL *)url {
     SDWebImageManager *manager = [SDWebImageManager sharedManager];
-    [manager loadImageWithURL:url options:kNilOptions progress:^(NSInteger receivedSize, NSInteger expectedSize, NSURL * _Nullable targetURL) {
+    [manager downloadImageWithURL:url options:kNilOptions progress:^(NSInteger receivedSize, NSInteger expectedSize) {
+        float fractionCompleted = (float)receivedSize/(float)expectedSize;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.progressView setProgress:fractionCompleted];
+        });
+    } completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (error) {
+                [self.progressView removeFromSuperview];
+                NSLog(@"error %@", error);
+            } else {
+                self.loadedImage = image;
+                [self prepareImageViewToShow];
+                [self.progressView removeFromSuperview];
+            }
+        });
+    }];
+    
+    /*
+    [manager downloadImageWithURL:url options:kNilOptions progress:^(NSInteger receivedSize, NSInteger expectedSize, NSURL * _Nullable targetURL) {
         float fractionCompleted = (float)receivedSize/(float)expectedSize;
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.progressView setProgress:fractionCompleted];
@@ -254,7 +273,7 @@
                 [self.progressView removeFromSuperview];
             }
         });
-    }];
+    }]; */
 }
 
 - (UIImageView *)createImageView {
